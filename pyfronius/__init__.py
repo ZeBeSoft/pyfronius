@@ -377,22 +377,22 @@ class Fronius:
     def _system_inverter_data(sensor, data):
         _LOGGER.debug("Converting system inverter data: '{}'".format(data))
 
-        sensor["energy_day"] = {"value": 0, "unit": "Wh"}
-        sensor["energy_total"] = {"value": 0, "unit": "Wh"}
-        sensor["energy_year"] = {"value": 0, "unit": "Wh"}
         sensor["power_ac"] = {"value": 0, "unit": "W"}
 
         sensor["inverters"] = {}
 
         if "DAY_ENERGY" in data:
+            sensor["energy_day"] = {"value": 0, "unit": "Wh"}
             for i in data["DAY_ENERGY"]["Values"]:
-                sensor["inverters"][i] = {}
+                if not sensor["inverters"]:
+                    sensor["inverters"][i] = {}
                 sensor["inverters"][i]["energy_day"] = {
                     "value": data["DAY_ENERGY"]["Values"][i],
                     "unit": data["DAY_ENERGY"]["Unit"],
                 }
                 sensor["energy_day"]["value"] += data["DAY_ENERGY"]["Values"][i]
         if "TOTAL_ENERGY" in data:
+            sensor["energy_total"] = {"value": 0, "unit": "Wh"}
             for i in data["TOTAL_ENERGY"]["Values"]:
                 sensor["inverters"][i]["energy_total"] = {
                     "value": data["TOTAL_ENERGY"]["Values"][i],
@@ -400,6 +400,7 @@ class Fronius:
                 }
                 sensor["energy_total"]["value"] += data["TOTAL_ENERGY"]["Values"][i]
         if "YEAR_ENERGY" in data:
+            sensor["energy_year"] = {"value": 0, "unit": "Wh"}
             for i in data["YEAR_ENERGY"]["Values"]:
                 sensor["inverters"][i]["energy_year"] = {
                     "value": data["YEAR_ENERGY"]["Values"][i],
@@ -407,12 +408,17 @@ class Fronius:
                 }
                 sensor["energy_year"]["value"] += data["YEAR_ENERGY"]["Values"][i]
         if "PAC" in data:
-            for i in data["PAC"]["Values"]:
+            key = "Values"
+            if "Value" in data["PAC"]:
+                key = "Value"
+            for i in data["PAC"][key]:
+                if not sensor["inverters"]:
+                    sensor["inverters"][i] = {}
                 sensor["inverters"][i]["power_ac"] = {
-                    "value": data["PAC"]["Values"][i],
+                    "value": data["PAC"][key][i],
                     "unit": data["PAC"]["Unit"],
                 }
-                sensor["power_ac"]["value"] += data["PAC"]["Values"][i]
+                sensor["power_ac"]["value"] += data["PAC"][key][i]
 
         return sensor
 
